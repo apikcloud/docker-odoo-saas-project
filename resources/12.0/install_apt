@@ -1,3 +1,4 @@
 #!/bin/bash
 
-apt-get install libcups2-dev
+apt-get install libcups2-dev gcc python3-dev
+pip install pycups
