@@ -1,4 +1,6 @@
 #!/bin/bash
 
-apt-get install libcups2-dev gcc python3-dev
-pip install pycups
+apt-get update \
+&& apt-get install -yqq --no-install-recommends libcups2-dev gcc python3-dev \ 
+&& pip install --no-cache-dir pycups \
+&& apt-get purge -yqq libcups2-dev gcc python3-dev
