@@ -17,7 +17,7 @@ ODOO_VERSION = os.environ.get("ODOO_VERSION")
 
 
 def wget(url, output, force=True, params=None):
-    r = requests.get(url, params=params)
+    r = requests.get(url, params=params,verify=False)
     if r.status_code != 200:
         raise Exception("Unable to GET %s [%s] (%s)" % (
             url, params, r.status_code))
