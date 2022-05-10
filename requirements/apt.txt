@@ -3,3 +3,5 @@ procps
 htop
 ftp
 rsync
+gcc
+unzip
