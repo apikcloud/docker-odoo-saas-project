@@ -5,3 +5,4 @@ ftp
 rsync
 gcc
 unzip
+g++
