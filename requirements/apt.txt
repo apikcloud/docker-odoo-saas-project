@@ -6,4 +6,4 @@ rsync
 gcc
 unzip
 g++
-libmagic
+libmagic-dev
