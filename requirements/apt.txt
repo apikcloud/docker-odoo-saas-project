@@ -3,3 +3,7 @@ procps
 htop
 ftp
 rsync
+gcc
+unzip
+g++
+libmagic1
