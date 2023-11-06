@@ -5,7 +5,10 @@ import requests
 import subprocess
 import datetime
 import logging
+
 logger = logging.getLogger(__name__)
+
+requests.packages.urllib3.disable_warnings()
 
 SOURCES = os.environ.get("SOURCES")
 RESOURCES = os.environ.get("RESOURCES")
@@ -14,13 +17,13 @@ SAAS_PROVIDER_TOKEN = os.environ.get("SAAS_PROVIDER_TOKEN")
 DOCKER_REPO = os.environ.get("DOCKER_REPO")
 DOCKER_TAG_SUFFIX = os.environ.get("DOCKER_TAG_SUFFIX")
 ODOO_VERSION = os.environ.get("ODOO_VERSION")
+MINOR_VERSION = os.environ.get("MINOR_VERSION")
 
 
 def wget(url, output, force=True, params=None):
-    r = requests.get(url, params=params,verify=False)
+    r = requests.get(url, params=params, verify=False)
     if r.status_code != 200:
-        raise Exception("Unable to GET %s [%s] (%s)" % (
-            url, params, r.status_code))
+        raise Exception("Unable to GET %s [%s] (%s)" % (url, params, r.status_code))
     if os.path.exists(output):
         if not force:
             raise Exception("File already exists")
@@ -29,7 +32,7 @@ def wget(url, output, force=True, params=None):
     if not r.content:
         logger.warning("GET %s [%s] returned an empty file" % (url, params))
         return False
-    with open(output, 'wb') as file:
+    with open(output, "wb") as file:
         file.write(r.content)
     return output
 
@@ -39,9 +42,12 @@ def wget_saas_file(url, output, extra_params=None):
     params = {
         "docker_image": DOCKER_REPO,
         "major_version": ODOO_VERSION,
-        "suffix": DOCKER_TAG_SUFFIX,
         "token": SAAS_PROVIDER_TOKEN,
     }
+
+    if DOCKER_TAG_SUFFIX:
+        params["suffix"] = DOCKER_TAG_SUFFIX
+
     if extra_params:
         params.update(extra_params)
     return wget("%s/%s" % (base_url, url), output, params=params)
@@ -60,7 +66,8 @@ if SAAS_PROVIDER_URL:
         "repos.yml",
         os.path.join(RESOURCES, "repos.d", "saas-version-repos.yml"),
         extra_params={
-            "minor_version": datetime.datetime.now().strftime("%Y.%m.%d"),
+            "minor_version": MINOR_VERSION
+            or datetime.datetime.now().strftime("%Y.%m.%d"),
         },
     )
     wget_saas_file(
@@ -77,16 +84,22 @@ if SAAS_PROVIDER_URL:
     )
     # Aggregate repositories. We simply call that build step manually
     subprocess.check_call(
-        [os.path.join(RESOURCES, "build.d", "300-aggregate-repositories")])
+        [os.path.join(RESOURCES, "build.d", "300-aggregate-repositories")]
+    )
     subprocess.check_call(
-        ["chown", "-R", "odoo.odoo", os.path.join(SOURCES, "repositories")])
+        ["chown", "-R", "odoo.odoo", os.path.join(SOURCES, "repositories")]
+    )
     # Set permissions
     subprocess.check_call(["chown", "-R", "odoo.odoo", RESOURCES])
     if os.path.isfile(os.path.join(RESOURCES, "entrypoint.d", "900-saas-entrypoint")):
         subprocess.check_call(
-            ["chmod", "a+x", os.path.join(RESOURCES, "entrypoint.d", "900-saas-entrypoint")])
+            [
+                "chmod",
+                "a+x",
+                os.path.join(RESOURCES, "entrypoint.d", "900-saas-entrypoint"),
+            ]
+        )
     # Run custom build script
     if os.path.isfile(os.path.join(RESOURCES, "saas_build")):
-        subprocess.check_call(
-            ["chmod", "a+x", os.path.join(RESOURCES, "saas_build")])
+        subprocess.check_call(["chmod", "a+x", os.path.join(RESOURCES, "saas_build")])
         subprocess.check_call([os.path.join(RESOURCES, "saas_build")])
